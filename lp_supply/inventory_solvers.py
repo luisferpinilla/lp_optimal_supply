@@ -96,18 +96,18 @@ class PlaneacionAgregada(object):
         periods = len(self._forecast)
 
         # Crear variable par el problema
-        prob = lp.LpProblem(name="PurchasePlanning")
+        prob = LpProblem(name="PurchasePlanning")
 
         # crear variables
         for t in range(periods):
             namefi = "InventoryAt{0}".format(t)
             namepq = "PurchaseQuantity{0}".format(t)
             namepo = "PlacePO{0}".format(t)
-            self._finalInventory[t] = lp.LpVariable(namefi,
+            self._finalInventory[t] = LpVariable(namefi,
                                                     lowBound=-self._totalDemand - self._initialInventory,
                                                     upBound=self._totalDemand + self._initialInventory + self._totalArrivals)
-            self._purchaseQuantities[t] = lp.LpVariable(namepq, lowBound=0.0, upBound=self._totalDemand)
-            self._purchaseOrders[t] = lp.LpVariable(namepo, lowBound=0.0, upBound=1.0, cat='Binary')
+            self._purchaseQuantities[t] = LpVariable(namepq, lowBound=0.0, upBound=self._totalDemand)
+            self._purchaseOrders[t] = LpVariable(namepo, lowBound=0.0, upBound=1.0, cat='Binary')
 
         # objetive: costo de las compras más el costo del inventario final en cada periodo
 
@@ -150,7 +150,7 @@ class PlaneacionAgregada(object):
             prob.add(cantidadpedida <= pedido * self._maxCapacity[t], name=namemx)
             prob.add(cantidadpedida >= pedido * self._minPurchaseQuantity, name=namemn)
 
-        lp.GLPK().solve(prob)
+        prob.solve(prob)
         if verbose:
             print(prob)
         
