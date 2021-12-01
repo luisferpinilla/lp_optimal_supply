@@ -150,7 +150,7 @@ class PlaneacionAgregada(object):
             prob.add(cantidadpedida <= pedido * self._maxCapacity[t], name=namemx)
             prob.add(cantidadpedida >= pedido * self._minPurchaseQuantity, name=namemn)
 
-        prob.solve(prob)
+        prob.solve()
         if verbose:
             print(prob)
         
