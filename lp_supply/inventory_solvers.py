@@ -150,7 +150,7 @@ class PlaneacionAgregada(object):
             prob.add(cantidadpedida <= pedido * self._maxCapacity[t], name=namemx)
             prob.add(cantidadpedida >= pedido * self._minPurchaseQuantity, name=namemn)
 
-        prob.solve(prob)
+        prob.solve()
         if verbose:
             print(prob)
         
@@ -163,7 +163,6 @@ class PlaneacionAgregada(object):
         for i in self._finalInventory.keys():
             pedidos.append(self._purchaseQuantities[i].varValue)
             proyinv.append(self._finalInventory[i].varValue)
-        #print(lp.value(prob.objective))
-        return pedidos, proyinv, lp.value(prob.objective)
+        return pedidos, proyinv, prob.objective
 
 
