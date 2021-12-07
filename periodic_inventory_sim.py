@@ -1,5 +1,5 @@
 import numpy as np
-import event_queue as eq
+from sim_utils import event_queue as eq
 
 
 class PeriodicInventorySim():
