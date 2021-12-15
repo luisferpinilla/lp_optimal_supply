@@ -5,5 +5,18 @@ class Event():
         self.event_type = type_of_event
         self.event_name = event_name
     
+    @property
+    def get_clock(self)-> int:
+        return self.clock
+
+    @property
+    def get_event_type(self)->EventType:
+        return self.event_type
+    
+    @property
+    def get_event_name(self)->str:
+        return self.event_name
+
+        
 
         
