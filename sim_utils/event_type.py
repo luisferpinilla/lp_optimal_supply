@@ -1,9 +1,11 @@
 from enum import Enum
 
 class EventType(Enum):
-    '''
-    Determine the type of events
-    '''
+    """Type of event
+
+    Args:
+        Enum ([type]): describes event
+    """
     PURCHASE_ORDER=1
     ARRIVAL=2
     
