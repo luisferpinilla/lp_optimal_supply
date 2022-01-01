@@ -4,11 +4,11 @@ print('inicializando queue')
 queue = EventQueue()
 
 print('agregando algunos eventos')
-queue.add_event(time_clock=10, event_name='test llegada 10', event_type=EventType.ARRIVAL)
-queue.add_event(time_clock=12, event_name='test llegada 12', event_type=EventType.ARRIVAL)
-queue.add_event(time_clock=14, event_name='test llegada 14', event_type=EventType.ARRIVAL)
-queue.add_event(time_clock=11, event_name='test llegada 11', event_type=EventType.ARRIVAL)
-
+queue.add_event(Event(clock=10, type_of_event=EventType.DEMAND, event_name='Test demanda 10'))
+queue.add_event(Event(clock=14, type_of_event=EventType.DEMAND, event_name='Test demanda 14'))
+queue.add_event(Event(clock=13, type_of_event=EventType.DEMAND, event_name='Test demanda 13'))
+queue.add_event(Event(clock=11, type_of_event=EventType.DEMAND, event_name='Test demanda 11'))
+queue.add_event(Event(clock=10, type_of_event=EventType.DEMAND, event_name='Test2 demanda 10'))
 print('pop up algunos eventos')
 for t in range(20):
     print(f'time clock = {t}:')
