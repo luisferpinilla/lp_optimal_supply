@@ -1,9 +1,12 @@
 from event_type import EventType
 class Event():
-    def __init__(self, clock:int, type_of_event:EventType, event_name:str) -> None:
+    """Contains an event including information about when occurs and witch object is attached
+    """
+    def __init__(self, clock:int, type_of_event:EventType, event_name:str, document=None) -> None:
         self.clock = clock
         self.event_type = type_of_event
         self.event_name = event_name
+        self.document = document
     
     @property
     def get_clock(self)-> int:
@@ -31,6 +34,15 @@ class Event():
             str: event name
         """
         return self.event_name
+
+    @property
+    def get_document(self)->object:
+        """returns a document attached
+
+        Returns:
+            object: Document attached to the event
+        """
+        return self.document
 
         
 
