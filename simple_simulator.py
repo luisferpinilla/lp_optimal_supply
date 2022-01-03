@@ -1,14 +1,16 @@
-from sim_utils.simple_simulator import SimpleSimulator
+from sim_utils.simple_simulator import ReorderPointSimpleSimulator
+from sim_utils.events import EventType, Event, EventQueue
 
 
-def main():
-    # Create an instance of simulator
-    simulador = SimpleSimulator(initial_inventory=500, lead_time=3)
+sim = ReorderPointSimpleSimulator(initial_inventory=20, lead_time=3,
+                      reorder_point=12, quantity_to_order=25, safety_Stock=5)
 
-    # load forecast data file
-    # load initial inventory file
-    # load current purchase orders
-    # load leadtime file
-    # run simulator
+for i in range(200):
+    sim.event_queue.add_event(Event(clock=i, type_of_event=EventType.DEMAND,
+                              event_name='Pedido', document={'qty': np.random.randint(low=1, high=20)}))
+
+
+for t in range(200):
+    sim.advance_time()
     
 
