@@ -1,5 +1,5 @@
 import numpy as np
-from events import EventType, Event, EventQueue
+from sim_utils.events import EventType, Event, EventQueue
 
 
 class ReorderPointSimpleSimulator(object):
@@ -23,6 +23,24 @@ class ReorderPointSimpleSimulator(object):
         """
         return self.inventory + self.quantity_ordered
 
+    @property
+    def inventory_on_hand(self) -> int:
+        """return the inventory on hand. If there are backorder, it returns 0
+
+        Returns:
+            int: inventory on hand
+        """
+        return max(self.inventory, 0)
+
+    @property
+    def backorder(self) -> int:
+        """returns the backorder when the inventory on hand < 0
+
+        Returns:
+            int: Backorder
+        """
+        return min(self.inventory, 0)
+
     def advance_time(self):
         # Obtener la lista de eventos para el time en clock
         event_list = self.event_queue.pop_up_events(self.clock)
@@ -39,8 +57,7 @@ class ReorderPointSimpleSimulator(object):
 
         self.clock += 1
 
-        print(self.clock, ':', 'Inventario:', self.inventory, 'ordered:',
-              self.quantity_ordered, 'inventory_position', self.inventory_position)
+        print(self.clock, ':', 'Inventario on hand:', self.inventory_on_hand, 'Backorder:', self.backorder,  'ordered:', self.quantity_ordered, 'inventory_position', self.inventory_position)
 
     def add_demand_event(self, time_clock: int, quantity: int):
         print(f'\tventa por {quantity}')
@@ -73,6 +90,3 @@ class ReorderPointSimpleSimulator(object):
         self.inventory -= qty
         if self.inventory_position <= self.reorder_point:
             self.add_purchase_order()
-
-
-
