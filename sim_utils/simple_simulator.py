@@ -1,10 +1,8 @@
 import numpy as np
-from event_queue import EventQueue
-from event_type import EventType
-from event import Event
+from events import EventType, Event, EventQueue
 
 
-class SimpleSimulator(object):
+class ReorderPointSimpleSimulator(object):
     def __init__(self, initial_inventory=0.0, lead_time=1, reorder_point=10, quantity_to_order=10, safety_Stock=0.0) -> None:
         super().__init__()
         self.clock = 0
@@ -77,13 +75,4 @@ class SimpleSimulator(object):
             self.add_purchase_order()
 
 
-sim = SimpleSimulator(initial_inventory=20, lead_time=3,
-                      reorder_point=12, quantity_to_order=25, safety_Stock=5)
 
-for i in range(200):
-    sim.event_queue.add_event(Event(clock=i, type_of_event=EventType.DEMAND,
-                              event_name='Pedido', document={'qty': np.random.randint(low=1, high=20)}))
-
-
-for t in range(200):
-    sim.advance_time()
