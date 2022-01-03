@@ -1,5 +1,5 @@
 from enum import Enum
-
+@DeprecationWarning
 class EventType(Enum):
     """Type of event
 

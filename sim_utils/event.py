@@ -1,4 +1,6 @@
 from event_type import EventType
+
+@DeprecationWarning
 class Event():
     """Contains an event including information about when occurs and witch object is attached
     """

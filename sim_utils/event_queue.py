@@ -2,7 +2,7 @@ from event import Event
 from event_type import EventType
 
 
-
+@DeprecationWarning
 class EventQueue():
     def __init__(self) -> None:
         self.queue = dict()
