@@ -1,5 +1,6 @@
-from sim_utils.simple_simulator import ReorderPointSimpleSimulator
-from sim_utils.events import EventType, Event, EventQueue
+from sim_utils.simulators import ReorderPointSimpleSimulator
+from sim_utils.events import EventType, Event
+import numpy as np
 
 
 sim = ReorderPointSimpleSimulator(initial_inventory=20, lead_time=3,
