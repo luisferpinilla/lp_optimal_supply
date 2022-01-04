@@ -9,6 +9,7 @@ class EventType(Enum):
     DEMAND=0
     PURCHASE_ORDER=1
     ARRIVAL=2
+    REVIEW=3
 
 
 class Event():
