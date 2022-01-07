@@ -1,4 +1,4 @@
-from simple_simulator import ReorderPointSimpleSimulator
+from sim_utils.sim_utils.simple_simulator import ReorderPointSimpleSimulator
 from sim_utils.events import EventType, Event
 import numpy as np
 

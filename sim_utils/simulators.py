@@ -101,7 +101,8 @@ class ReviewPeriodicSimpleSimulator(object):
         self.lead_time = lead_time
         self.quantity_ordered = 0
         self.order_up_to_level = order_up_to_level
-        self.periods_to_review_period = initial_time_po
+        self.review_period = review_period
+        self.statistics = {'clock': [], 'Inventory_on_hand':[], 'backorder': [], 'Quantity_ordered': [], 'inventory_position':[] }
         # agregar el primer evento de revisión
         self.event_queue.add_event(Event(clock=initial_time_po, type_of_event=EventType.PURCHASE_ORDER, event_name='Initial PO'))
 
@@ -131,7 +132,13 @@ class ReviewPeriodicSimpleSimulator(object):
         Returns:
             int: Backorder
         """
-        return min(self.inventory, 0)
+        return min(self.inventory, 0)*-1
+
+    @property
+    def statistics_dataframe(self)->pd.DataFrame:
+        df = pd.DataFrame(self.statistics)
+        df['oul'] = self.order_up_to_level
+        return df
 
     def advance_time(self):
         
@@ -141,9 +148,9 @@ class ReviewPeriodicSimpleSimulator(object):
         # Para cada evento, ejecutar sus acciones
         for event in event_list:
             if event.get_event_type == EventType.DEMAND:
-                self.handle_demand_event(event)
+                self.handle_demand_event(event=event)
             elif event.get_event_type == EventType.PURCHASE_ORDER:
-                pass
+                self.handle_review_period_event(event=event)
             elif event.get_event_type == EventType.ARRIVAL:
                 self.handle_arrival_event(event=event)
             else:
@@ -152,6 +159,11 @@ class ReviewPeriodicSimpleSimulator(object):
         self.clock += 1
 
         print(self.clock, ':', 'Inventario on hand:', self.inventory_on_hand, 'Backorder:', self.backorder,  'ordered:', self.quantity_ordered, 'inventory_position', self.inventory_position)
+        self.statistics['clock'].append(self.clock) 
+        self.statistics['Inventory_on_hand'].append(self.inventory_on_hand) 
+        self.statistics['backorder'].append(self.backorder) 
+        self.statistics['Quantity_ordered'].append(self.quantity_ordered) 
+        self.statistics['inventory_position'].append(self.inventory_position) 
 
     def add_demand_event(self, time_clock: int, quantity: int):
         print(f'\tventa por {quantity}')
@@ -159,9 +171,8 @@ class ReviewPeriodicSimpleSimulator(object):
                       event_name='Pedido', document={'qty': quantity})
         self.event_queue.add_event(event=event)
 
-    def add_purchase_order(self):
-
-        qty_to_order = self.safety_stock + self.quantity_to_order - self.inventory_position
+    def add_purchase_order(self, qty_to_order):
+       
         print('\tordenando', qty_to_order)
         event = Event(clock=self.clock + self.lead_time,
                       type_of_event=EventType.ARRIVAL,
@@ -170,6 +181,20 @@ class ReviewPeriodicSimpleSimulator(object):
         self.quantity_ordered += qty_to_order
         self.event_queue.add_event(event=event)
 
+    
+    def handle_review_period_event(self, event: Event):
+        # Place a new purchase order
+        print('\tReview Period')
+        if (self.inventory_position < self.order_up_to_level):
+            qty = self.order_up_to_level - self.inventory_position
+            self.add_purchase_order(qty_to_order=qty)
+
+        # schedule the next review period event
+        next_review_period = self.clock + self.review_period
+        new_event = Event(clock=next_review_period, type_of_event=EventType.PURCHASE_ORDER, event_name=f'Review Period {next_review_period}')
+        self.event_queue.add_event(new_event)
+    
+    
     def handle_arrival_event(self, event: Event):
         qty = event.get_document['qty']
         print(f'\tLlegada por {qty}')
@@ -182,5 +207,3 @@ class ReviewPeriodicSimpleSimulator(object):
         print(
             f'\tatendiendo venta por {qty} con inventario de {self.inventory}')
         self.inventory -= qty
-        if self.inventory_position <= self.order_up_to_level:
-            self.add_purchase_order()
