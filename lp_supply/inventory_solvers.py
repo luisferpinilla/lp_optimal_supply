@@ -170,7 +170,7 @@ def mono_product_multiperiod_multi_location(holding_cost:float, order_cost:float
     pedidos = [[Xbt[b][t].value() for t in range(len(forecast[b]))] for b in range(len(forecast))]    
     inventario = [[Ibt[b][t].value() for t in range(len(forecast[b]))] for b in range(len(forecast))]
     
-    return pedidos, inventario, forecast, arrivals
+    return pedidos, inventario, forecast
 
 
 class PlaneacionAgregada(object):
