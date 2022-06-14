@@ -1,6 +1,7 @@
 # Autor: Luis Fernando Pinilla
 
 import numpy as np
+import pulp as pu
 from pulp import LpMinimize, LpProblem, LpStatus, lpSum, LpVariable
 
 def multi_product_period_capacited(placing_order_cost:float, leadtime:int, supplier_capacity:list,  initial_inventory:list, product_holding_cost:list, mininum_batch_size:list, product_capacity_consume:list, forecast:list, arrivals: list, inventory_goals:list, penalty_cost_inventory_goal:list):
@@ -67,6 +68,109 @@ def multi_product_period_capacited(placing_order_cost:float, leadtime:int, suppl
     print(f"objective: {model.objective.value()}")
     for var in model.variables():
         print(f"{var.name}: {var.value()}")
+
+
+def mono_product_multiperiod_multi_location(holding_cost:float, order_cost:float, initial_inventory:list, safety_stock:list, min_batch_size:float, min_po:float, forecast:list, arrivals:list, leadtime:list, max_time_seconds=0):
+    """Calcula los pedidos óptimos a colocar a un proveedor teniendo múltiples bodegas a donde se debe despachar el producto. Se tiene en cuenta el safety stock definido para cada bodega, 
+    el pedido mínimo que debe colocarse en conjunto para las tres bodegas, el mínimo pedido que debe llegar a cada bodega, el pronóstico de venta, las llegadas programadas con antelación y
+    diferentes lead time a desde el proveedor a cada bodega
+
+    Args:
+        holding_cost (float): costo financiero por mantener un producto en inventario. Se puede calcular a partir de una tasa de interés y el costo unitario del producto
+        order_cost (float): costo de colocar una orden de abastecimiento al proveedor.
+        initial_inventory (list): inventario inicial en bodega
+        safety_stock (list): cantidad mínima a mantener en bodega.
+        min_batch_size (float): cantidad mínima que se puede pedir al proveedor
+        min_po (float): mínimo pedido que puede colocar una bodega
+        forecast (list): presupuesto de ventas de cada producto en cada bodega
+        arrivals (list): llegadas programadas a cada bodega
+        leadtime (list): lead time a cada bodega
+        max_time_seconds (int, optional): máximo tiempo a esperar por ejecusión del modelo. Por defecto es 0 que significa que es ilimitado.
+
+    Returns:
+        tuple: pedidos a colocar, inventario proyectado, presupuesto de ventas, llegadas aproximadas
+    """
+    
+    bigM = np.sum(forecast)
+
+    # variable Xbt: Cantidad pedida para la bodega b durante el periodo t
+    Xbt = [[pu.LpVariable(name=f'Xb{b}t{t}',lowBound=0, upBound=bigM) for t in range(len(forecast[0]))] for b in range(len(forecast))]
+    
+    # variable Pbt: 1 si se coloca pedido durante el periodo t; 0 en otro caso
+    Pt = [pu.LpVariable(f'Pt{t}', cat='Binary') for t in range(len(forecast[0]))]
+    
+    Mbt = [[pu.LpVariable(name=f'Mb{b}t{t}', cat='Binary') for t in range(len(forecast[0]))] for b in range(len(forecast))]
+    
+    # variable Ibt: cantidad de inventario en la bodega b al final del periodo t
+    Ibt = [[pu.LpVariable(name=f'Ib{b}t{t}') for t in range(len(forecast[b]))] for b in range(len(forecast))]
+    
+    # declarar el problema
+    prob = pu.LpProblem("Suggested_PO", pu.LpMinimize)
+    # Colocar funcion objetivo
+    prob += (pu.lpSum([order_cost*Pt[t] for t in range(len(forecast[0]))] + 
+                      [holding_cost*Ibt[b][t] for t in range(len(forecast[0])) for b in range(len(forecast))]),
+                       'Costo total relevante')
+    
+    #prob += (pu.lpSum([Ibt[b][t] for t in range(len(forecast[0])) for b in range(len(forecast))]), 'Metros almacenados')
+
+    # restriccion para evitar quedar bajo el SS
+    # para cada bodega
+    for b in range(len(forecast)):
+        # para cada periodo
+        for t in range(leadtime[b], len(forecast[b])):
+            # obligat a que Ibt termine sobre el SS
+            prob += (Ibt[b][t] >= safety_stock[b], 
+                     f'terminar inventario al final de {t} sobre {safety_stock[b]} en la bodega {b}')
+
+    # restriccion de flujo de inventarios
+    # para cada bodega
+    for b in range(len(forecast)):
+        
+        # el inventario final es el inicial menos el forecast + las llegadas programadas
+        prob += (Ibt[b][0] == initial_inventory[b] - forecast[b][0] + arrivals[b][0], 
+                 f'inventario en la bodega {b} al final del periodo {0}')        
+        
+        # para cada periodo
+        for t in range(1, len(forecast[0])):
+            if t < leadtime[b]:
+                # el inventario final es el cierre del periodo anterior menos el forecast + las llegadas programadas
+                prob += (Ibt[b][t] == Ibt[b][t-1] - forecast[b][t] + arrivals[b][t],
+                         f'inventario en la bodega {b} al final del periodo {t}')
+            else:
+                # el inventario final es el cierre del periodo anterior menos el forecast + las llegadas programadas + pedidos colocados un lead time antes
+                prob += (Ibt[b][t] == Ibt[b][t-1] - forecast[b][t] + arrivals[b][t] + Xbt[b][t-leadtime[b]], 
+                         f'inventario en la bodega {b} al final del periodo {t}') 
+
+    # restricciones de pedidos mínimos
+    
+    # para cada bodega
+    for b in range(len(forecast)):
+        # para cada periodo
+        for t in range(len(forecast[0])):        
+            # pedir sobre el pedido mínimo
+            prob += (Xbt[b][t] >= min_po*Mbt[b][t], f'pedir sobre el pedido minimo durante {t} en la bodega {b}')
+            # habilitar capacidad
+            prob += (Xbt[b][t] <= 10000*Mbt[b][t], f'pedir menos de la capacidad durante {t} en la bodega {b}')
+    
+    # La suma de los pedidos debe superar el lote minimo de producción
+    for t in range(len(forecast[b])):        
+        prob += (pu.lpSum([Xbt[b][t] for b in range(len(forecast))]) >= min_batch_size*Pt[t], 
+                 f'superar el lote minimo de produccion durante {t}')  
+        prob += (pu.lpSum([Xbt[b][t] for b in range(len(forecast))]) <= 10000*Pt[t], 
+                 f'No emitir pedido si no se activa el pedidodurante {t}') 
+    
+    #print(prob)
+    
+    # prob.solve(pu.PULP_CBC_CMD(timeLimit=max_time_seconds))
+    if max_time_seconds != 0:
+        prob.solve(pu.GLPK_CMD(options=['--mipgap', '0.35', f'--tmlim {max_time_seconds}']))
+    else:
+        prob.solve(pu.GLPK_CMD(options=['--mipgap', '0.35']))
+    
+    pedidos = [[Xbt[b][t].value() for t in range(len(forecast[b]))] for b in range(len(forecast))]    
+    inventario = [[Ibt[b][t].value() for t in range(len(forecast[b]))] for b in range(len(forecast))]
+    
+    return pedidos, inventario, forecast, arrivals
 
 
 class PlaneacionAgregada(object):
